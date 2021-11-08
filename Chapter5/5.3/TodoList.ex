@@ -20,19 +20,28 @@ defmodule TodoList do
         %TodoList{todo_list | entries: new_entries, auto_id: todo_list.auto_id + 1}
     end
 
-    def entries(todo_list, date) do
+    def entries(todo_list, %Date{} = date) do
         todo_list.entries()
         |> Stream.filter(fn {_, entry} -> entry.date == date end) # Filters entries for a given date
         |> Enum.map(fn {_, entry} -> entry end) # Takes only values
     end
+    def entries(todo_list, title) when is_binary(title) do
+        todo_list.entries()
+        |> Stream.filter(fn {_, entry} -> entry.title == title end) # Filters entries for a given date
+        |> Enum.map(fn {_, entry} -> entry end) # Takes only values
+    end
+    def entries(todo_list, id) when is_integer(id) do
+        Map.get(todo_list.entries, id)
+    end
 
     def update_entry(todo_list, entry_id, updater_fun) do
+        # TODO : when updating an entry, why is the entire entry overwritten and the two don't merge?
         case Map.fetch(todo_list.entries, entry_id) do
             :error -> todo_list
             {:ok, old_entry} ->
                 old_entry_id = old_entry.id
                 new_entry = %{id: ^old_entry_id} = updater_fun.(old_entry)
-                new_entries = Map.put(todo_list.entries, new_entry.id, new_entry)
+                new_entries = Map.put(todo_list.entries, new_entry.id, Map.merge(new_entry, todo_list.entries[new_entry.id], fn _k, v1, _v2 -> v1 end))
                 %TodoList{todo_list | entries: new_entries}
         end
     end
@@ -53,11 +62,12 @@ defimpl Collectable, for: TodoList do
         TodoList.add_entry(todo_list, entry)
     end
     defp into_callback(todo_list, :done), do: todo_list
-    defp into_callback(todo_list, :halt), do: :ok
+    defp into_callback(_todo_list, :halt), do: :ok
 end
 
 defmodule TodoServer do
     def start, do: spawn(fn -> loop(TodoList.new()) end) # use a new TodoList as the initial state
+    def start(%TodoList{} = list), do: spawn(fn -> loop(list) end) # use a provided TodoList as initial state
 
     defp loop(todo_list) do
         new_todo_list =
@@ -71,16 +81,14 @@ defmodule TodoServer do
     defp process_message(todo_list, {:add_entry, new_entry}) do
         TodoList.add_entry(todo_list, new_entry)
     end
-
     defp process_message(todo_list, {:entries, caller, date}) do
         send(caller, {:todo_entries, TodoList.entries(todo_list, date)})
+        todo_list
     end
-
     defp process_message(todo_list, {:delete_entry, id}) do
         TodoList.delete_entry(todo_list, id)
     end
-
-    defp process_message(todo_list, {:update_entry, %{} = new_entry}) do
+    defp process_message(todo_list, {:update_entry, new_entry}) do
         TodoList.update_entry(todo_list, new_entry)
     end
 
@@ -88,9 +96,8 @@ defmodule TodoServer do
         send(todo_server, {:add_entry, new_entry})
     end
 
-    def entries(todo_server, date) do
-        send(todo_server, {:entries, self(), date})
-
+    def entries(todo_server, query) do
+        send(todo_server, {:entries, self(), query})
         receive do
             {:todo_entries, entries} -> entries
         after
@@ -101,12 +108,22 @@ defmodule TodoServer do
     def delete_entry(todo_server, id) do
         send(todo_server, {:delete_entry, id})
     end
+
+    def update_entry(todo_server, %{} = new_entry) do
+        send(todo_server, {:update_entry, new_entry})
+    end
 end
 
-# todo_server = TodoServer.start()
 # entries = [
 #     %{date: ~D[2018-12-19], title: "Dentist"},
 #     %{date: ~D[2018-12-20], title: "Shopping"},
 #     %{date: ~D[2018-12-19], title: "Movies"}
 # ]
-# todo_list = for entry <- entries, into: TodoList.new(), do: &TodoServer.add_entry(todo_server, &1)
+# server = TodoServer.start()
+# Enum.each(entries, &TodoServer.add_entry(server, &1))
+# TodoServer.entries(server, ~D[2018-12-19])
+# TodoServer.entries(server, 1)
+# TodoServer.update_entry(server, %{id: 2, title: "Feeding Pesto"})
+# TodoServer.add_entry(server, %{date: ~D[2021-11-08], title: "Feeding Pesto"})
+# TodoServer.entries(server, "Feeding Pesto")
+# TodoServer.delete_entry(server, 4)
