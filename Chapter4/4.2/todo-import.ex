@@ -44,8 +44,10 @@ defmodule TodoList do
         update_entry(todo_list, new_entry.id, fn _ -> new_entry end)
     end
 
-    def delete_entry(todo_list, id), do: Map.delete(todo_list.entries, id)
-
+    def delete_entry(todo_list, id) do
+        new_entries = Map.delete(todo_list.entries, id)
+        %TodoList{todo_list | entries: new_entries}
+    end
 end
 
 # todo_list = TodoList.new() |>
