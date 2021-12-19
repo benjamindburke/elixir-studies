@@ -1,18 +1,15 @@
 defmodule Todo.Database do
-  use GenServer
+use GenServer
 
   @db_folder "./persist"
+  @worker_count 3
 
   def start do
     # registering the process locally will force the process to only run once
     # this is very useful if one module needs to orchestrate other processes
     # or manage some shared state between process
     # thus, locally registered processes can become synchronization locks
-    GenServer.start(
-      __MODULE__,
-      nil,
-      name: __MODULE__ # locally register the process
-    )
+    GenServer.start(__MODULE__, nil, name: __MODULE__)
   end
 
   def store(key, data) do
@@ -25,34 +22,36 @@ defmodule Todo.Database do
 
   @impl GenServer
   def init(_) do
-    File.mkdir_p!(@db_folder)
-    {:ok, nil}
+    workers =
+      for worker <- 0..(@worker_count - 1),
+        into: %{} do
+        {worker, Todo.DatabaseWorker.start(@db_folder)}
+      end
+    {:ok, workers}
   end
 
   @impl GenServer
-  def handle_cast({:put, key, data}, state) do
-    # the upside of using cast in this persist function is that
-    # the client can continue its execution if it doesn't care about the result
-    # this behavior also allows casts to be far more scalable that calls
-    # the downside of using cast is that sometimes you will need to verify if the data was persisted
-    key
-    |> file_name()
-    |> File.write!(:erlang.term_to_binary(data))
+  def handle_cast({:put, key, data}, workers) do
+    spawn(fn ->
+      worker = choose_worker(workers, key)
+      Todo.DatabaseWorker.store(worker, key, data)
+    end)
 
-    {:noreply, state}
+    {:noreply, workers}
   end
 
   @impl GenServer
-  def handle_call({:get, key}, _, state) do
-    data = case File.read(file_name(key)) do
-      {:ok, contents} -> :erlang.binary_to_term(contents)
-      _ -> nil
-    end
+  def handle_call({:get, key}, caller, workers) do
+    spawn(fn ->
+      worker = choose_worker(workers, key)
+      data = Todo.DatabaseWorker.get(worker, key)
+      GenServer.reply(caller, data)
+    end)
 
-    {:reply, data, state}
+    {:no_reply, workers}
   end
 
-  defp file_name(key) do
-    Path.join(@db_folder, to_string(key))
+  defp choose_worker(workers, key) do
+    Map.get(workers, :erlang.phash2(key, 3))
   end
 end
