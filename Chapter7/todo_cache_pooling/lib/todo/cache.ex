@@ -1,6 +1,14 @@
 defmodule Todo.Cache do
   use GenServer
 
+  def start do
+    GenServer.start(__MODULE__, nil)
+  end
+
+  def server_process(cache, todo_list_name) do
+    GenServer.call(cache, {:server_process, todo_list_name})
+  end
+
   @impl GenServer
   def init(_) do
     Todo.Database.start()
@@ -15,16 +23,13 @@ defmodule Todo.Cache do
         {:reply, todo_server, todo_servers}
       :error ->
         {:ok, new_server} = Todo.Server.start(todo_list_name)
-        {:reply, new_server, Map.put(todo_servers, todo_list_name, new_server)}
+
+        {
+          :reply,
+          new_server,
+          Map.put(todo_servers, todo_list_name, new_server)
+        }
     end
-  end
-
-  def start() do
-    GenServer.start(__MODULE__, nil)
-  end
-
-  def server_process(cache, todo_list_name) do
-    GenServer.call(cache, {:server_process, todo_list_name})
   end
 end
 

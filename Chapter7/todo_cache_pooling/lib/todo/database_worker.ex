@@ -5,12 +5,12 @@ defmodule Todo.DatabaseWorker do
     GenServer.start(__MODULE__, folder)
   end
 
-  def get(pid, key) do
-    GenServer.call(pid, {:get, key})
+  def store(worker, key, data) do
+    GenServer.cast(worker, {:store, key, data})
   end
 
-  def store(pid, key, data) do
-    GenServer.cast(pid, {:put, key, data})
+  def get(worker, key) do
+    GenServer.call(worker, {:get, key})
   end
 
   @impl GenServer
@@ -20,11 +20,7 @@ defmodule Todo.DatabaseWorker do
   end
 
   @impl GenServer
-  def handle_cast({:put, key, data}, folder) do
-    # the upside of using cast in this persist function is that
-    # the client can continue its execution if it doesn't care about the result
-    # this behavior also allows casts to be far more scalable that calls
-    # the downside of using cast is that sometimes you will need to verify if the data was persisted
+  def handle_cast({:store, key, data}, folder) do
     spawn(fn ->
       folder
       |> file_name(key)

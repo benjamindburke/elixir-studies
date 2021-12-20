@@ -13,45 +13,37 @@ use GenServer
   end
 
   def store(key, data) do
-    GenServer.cast(__MODULE__, {:put, key, data})
+    key
+    |> choose_worker()
+    |> Todo.DatabaseWorker.store(key, data)
   end
 
   def get(key) do
-    GenServer.call(__MODULE__, {:get, key})
+    key
+    |> choose_worker()
+    |> Todo.DatabaseWorker.get(key)
+  end
+
+  defp choose_worker(key) do
+    GenServer.call(__MODULE__, {:choose_worker, key})
   end
 
   @impl GenServer
   def init(_) do
-    workers =
-      for worker <- 0..(@worker_count - 1),
-        into: %{} do
-        {worker, Todo.DatabaseWorker.start(@db_folder)}
-      end
-    {:ok, workers}
+    File.mkdir_p!(@db_folder)
+    {:ok, start_workers()}
   end
 
   @impl GenServer
-  def handle_cast({:put, key, data}, workers) do
-    spawn(fn ->
-      worker = choose_worker(workers, key)
-      Todo.DatabaseWorker.store(worker, key, data)
-    end)
-
-    {:noreply, workers}
+  def handle_call({:choose_worker, key}, _, workers) do
+    worker_key = :erlang.phash2(key, @worker_count)
+    {:reply, Map.get(workers, worker_key), workers}
   end
 
-  @impl GenServer
-  def handle_call({:get, key}, caller, workers) do
-    spawn(fn ->
-      worker = choose_worker(workers, key)
-      data = Todo.DatabaseWorker.get(worker, key)
-      GenServer.reply(caller, data)
-    end)
-
-    {:no_reply, workers}
-  end
-
-  defp choose_worker(workers, key) do
-    Map.get(workers, :erlang.phash2(key, 3))
+  defp start_workers do
+    for index <- 1..@worker_count, into: %{} do
+      {:ok, worker} =  Todo.DatabaseWorker.start(@db_folder)
+      {index - 1, worker}
+    end
   end
 end
