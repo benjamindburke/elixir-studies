@@ -5,10 +5,7 @@ use GenServer
   @worker_count 3
 
   def start do
-    # registering the process locally will force the process to only run once
-    # this is very useful if one module needs to orchestrate other processes
-    # or manage some shared state between process
-    # thus, locally registered processes can become synchronization locks
+    IO.puts("Starting database server.")
     GenServer.start(__MODULE__, nil, name: __MODULE__)
   end
 

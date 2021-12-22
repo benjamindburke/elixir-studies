@@ -10,6 +10,7 @@ defmodule Todo.Server do
   # START
   # ---------
   def start(name, entries \\ []) do
+    IO.puts("Starting to-do server for #{name}.")
     GenServer.start(__MODULE__, {name, entries})
   end
 
