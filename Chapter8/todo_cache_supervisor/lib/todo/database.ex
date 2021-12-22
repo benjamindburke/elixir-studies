@@ -4,9 +4,9 @@ use GenServer
   @db_folder "./persist"
   @worker_count 3
 
-  def start do
+  def start_link do
     IO.puts("Starting database server.")
-    GenServer.start(__MODULE__, nil, name: __MODULE__)
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
   def store(key, data) do
@@ -39,8 +39,8 @@ use GenServer
 
   defp start_workers do
     for index <- 1..@worker_count, into: %{} do
-      {:ok, worker} =  Todo.DatabaseWorker.start(@db_folder)
-      {index - 1, worker}
+      {:ok, worker} =  Todo.DatabaseWorker.start_link(@db_folder)
+      {index - 1, worker} # use a 0-based index to match phash2 domain space [0..n-1]
     end
   end
 end

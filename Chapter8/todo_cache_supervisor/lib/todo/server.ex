@@ -9,9 +9,9 @@ defmodule Todo.Server do
 
   # START
   # ---------
-  def start(name, entries \\ []) do
+  def start_link(name, entries \\ []) do
     IO.puts("Starting to-do server for #{name}.")
-    GenServer.start(__MODULE__, {name, entries})
+    GenServer.start_link(__MODULE__, {name, entries})
   end
 
   # CREATE
@@ -44,15 +44,8 @@ defmodule Todo.Server do
 
   @impl GenServer
   def init({name, entries}) do
-    # be careful of writing long init/1 functions
-    # remember that other dependencies cannot interact with the server while init/1 is running
-    # because GenServer blocks interactions until init/1 finishes
-
     {:ok, {name, Todo.Database.get(name) || Todo.List.new(entries)}}
-
-    # to circumvent this, we can send our own module a message to perform some setup in the handle_info hook
-    # send(self(), :real_init)
-    # {:ok, nil}
+    # send(self(), :real_init) # uncomment to hook into handle_info(:real_init, ...) callback
   end
 
   # READ
@@ -89,26 +82,3 @@ defmodule Todo.Server do
     {:noreply, {name, new_list}}
   end
 end
-
-# TEST CODE
-# ---------
-
-# entries = [
-#     %{date: ~D[2018-12-19], title: "Dentist"},
-#     %{date: ~D[2018-12-20], title: "Shopping"},
-#     %{date: ~D[2018-12-19], title: "Movies"}
-# ]
-# {:ok, cache} = Todo.Cache.start()
-# bobs_list = Todo.Cache.server_process(cache, "bobs_list")
-# Enum.each(entries, &Todo.Server.add_entry(bobs_list, &1))
-# Todo.Server.entries(bobs_list, 1)
-# Todo.Server.update_entry(bobs_list, %{id: 2, title: "Feeding Pesto"})
-# Todo.Server.add_entry(bobs_list, %{date: ~D[2021-11-08], title: "Feeding Pesto"})
-# Todo.Server.entries(bobs_list, "Feeding Pesto")
-# Todo.Server.delete_entry(bobs_list, 4)
-# Todo.Server.entries(bobs_list, 1)
-# Todo.Server.entries(bobs_list, "Feeding Pesto")
-# Todo.Database.get("bobs_list")
-# ...shut down
-# Todo.Cache.start()
-# bobs_list = Todo.Database.get("bobs_list")

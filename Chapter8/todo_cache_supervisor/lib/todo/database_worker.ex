@@ -1,9 +1,9 @@
 defmodule Todo.DatabaseWorker do
   use GenServer
 
-  def start(folder) do
+  def start_link(folder) do
     IO.puts("Starting database worker.")
-    GenServer.start(__MODULE__, folder)
+    GenServer.start_link(__MODULE__, folder)
   end
 
   def store(worker, key, data) do
