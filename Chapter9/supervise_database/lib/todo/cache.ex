@@ -12,7 +12,7 @@ defmodule Todo.Cache do
 
   @impl GenServer
   def init(_) do
-    Todo.Database.start_link()
+    Todo.Database.start_link(nil)
     {:ok, %{}}
   end
 

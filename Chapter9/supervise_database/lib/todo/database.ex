@@ -4,7 +4,7 @@ use GenServer
   @db_folder "./persist"
   @worker_count 3
 
-  def start_link do
+  def start_link(_) do
     IO.puts("Starting database server.")
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
