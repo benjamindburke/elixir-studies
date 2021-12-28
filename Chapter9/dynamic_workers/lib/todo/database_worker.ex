@@ -1,3 +1,5 @@
+# Todo DatabaseWorker [worker]
+# This module handles storage and retrieval of a single to-do list's data
 defmodule Todo.DatabaseWorker do
   use GenServer
 
@@ -14,7 +16,7 @@ defmodule Todo.DatabaseWorker do
   end
 
   # ---------
-  # DynamicSupervisor hook functions
+  # Supervisor hook functions
   # ---------
 
   def start_link({folder, worker_id}) do
@@ -35,6 +37,7 @@ defmodule Todo.DatabaseWorker do
   # ---------
 
   @impl GenServer
+  @spec init(binary) :: {:ok, binary}
   def init(folder) do
     File.mkdir_p!(folder)
     {:ok, folder}
@@ -69,6 +72,7 @@ defmodule Todo.DatabaseWorker do
   # Helper functions
   # ---------
 
+  @spec file_name(binary, charlist) :: binary
   defp file_name(folder, key) do
     Path.join(folder, to_string(key))
   end

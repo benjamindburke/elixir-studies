@@ -1,5 +1,5 @@
-# Todo Database
-# This supervisor process handles the creation and lookup of database workers up to a certain pool size.
+# Todo Database [supervisor]
+# This module supervises the creation of database workers
 defmodule Todo.Database do
   @db_folder "./persist"
   @pool_size 3
@@ -8,12 +8,14 @@ defmodule Todo.Database do
   # Interface functions
   # ---------
 
+  @spec store(charlist, any) :: :ok
   def store(key, data) do
     key
     |> choose_worker()
     |> Todo.DatabaseWorker.store(key, data)
   end
 
+  @spec get(charlist) :: any
   def get(key) do
     key
     |> choose_worker()
@@ -21,7 +23,7 @@ defmodule Todo.Database do
   end
 
   # ---------
-  # DynamicSupervisor hook functions
+  # Supervisor hook functions
   # ---------
 
   def start_link do
@@ -48,6 +50,7 @@ defmodule Todo.Database do
   # Helper functions
   # ---------
 
+  @spec choose_worker(charlist) :: integer
   defp choose_worker(key) do
     :erlang.phash2(key, @pool_size) + 1
   end

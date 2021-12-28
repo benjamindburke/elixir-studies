@@ -1,9 +1,11 @@
+# Todo Cache [dynamic supervisor]
+# This module supervises Todo.Server instances which perform a client's to-do storage and retrieval
 defmodule Todo.Cache do
-
   # ---------
   # Interface functions
   # ---------
 
+  @spec server_process(charlist) :: pid
   def server_process(todo_list_name) do
     case start_child(todo_list_name) do
       {:ok, pid} -> pid
@@ -15,6 +17,7 @@ defmodule Todo.Cache do
   # DynamicSupervisor hook functions
   # ---------
 
+  @spec start_link :: {:error, any} | {:ok, pid}
   def start_link do
     IO.puts("Starting to-do cache.")
     DynamicSupervisor.start_link(

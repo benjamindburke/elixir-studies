@@ -1,7 +1,6 @@
-# Todo.List
-# Data structure containing interfaces to manipulate to-do entries.
+# Todo List [struct]
+# Data structure containing interfaces to manipulate and query to-do list entries
 defmodule Todo.List do
-  @doc "auto_id will contain the ID value assigned to the new entry"
   defstruct auto_id: 1, entries: %{}
 
   # ---------
@@ -16,12 +15,16 @@ defmodule Todo.List do
     )
   end
 
+  # CREATE
+  # ---------
   def add_entry(todo_list, entry) do
     entry = Map.put(entry, :id, todo_list.auto_id)
     new_entries = Map.put(todo_list.entries, todo_list.auto_id, entry)
     %Todo.List{todo_list | entries: new_entries, auto_id: todo_list.auto_id + 1}
   end
 
+  # READ
+  # ---------
   def entries(todo_list, %Date{} = date) do
     todo_list.entries()
     |> Stream.filter(fn {_, entry} -> entry.date == date end) # Filters entries for a given date
@@ -38,6 +41,8 @@ defmodule Todo.List do
     Map.get(todo_list.entries, id)
   end
 
+  # UPDATE
+  # ---------
   def update_entry(todo_list, entry_id, updater_fun) do
     case Map.fetch(todo_list.entries, entry_id) do
       :error -> todo_list
@@ -53,6 +58,8 @@ defmodule Todo.List do
     update_entry(todo_list, new_entry.id, fn _ -> new_entry end)
   end
 
+  # DELETE
+  # ---------
   def delete_entry(todo_list, id) do
     new_entries = Map.delete(todo_list.entries, id)
     %Todo.List{todo_list | entries: new_entries}
