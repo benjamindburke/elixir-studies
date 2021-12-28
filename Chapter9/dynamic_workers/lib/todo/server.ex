@@ -1,18 +1,11 @@
 # compile using `iex -S mix compile`
 
 defmodule Todo.Server do
-  use GenServer
+  use GenServer, restart: :temporary
 
   # ---------
   # Interface functions
   # ---------
-
-  # START
-  # ---------
-  def start_link(name, entries \\ []) do
-    IO.puts("Starting to-do server for #{name}.")
-    GenServer.start_link(__MODULE__, {name, entries})
-  end
 
   # CREATE
   # ---------
@@ -36,6 +29,19 @@ defmodule Todo.Server do
   # ---------
   def delete_entry(pid, id) do
     GenServer.cast(pid, {:delete_entry, id})
+  end
+
+  # ---------
+  # Supervisor hook functions
+  # ---------
+
+  def start_link(name, entries \\ []) do
+    IO.puts("Starting to-do server for #{name}.")
+    GenServer.start_link(__MODULE__, {name, entries}, name: via_tuple(name))
+  end
+
+  defp via_tuple(name) do
+    Todo.ProcessRegistry.via_tuple({__MODULE__, name})
   end
 
   # ---------

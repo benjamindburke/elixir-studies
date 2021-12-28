@@ -1,6 +1,12 @@
+# Todo.List
+# Data structure containing interfaces to manipulate to-do entries.
 defmodule Todo.List do
   @doc "auto_id will contain the ID value assigned to the new entry"
   defstruct auto_id: 1, entries: %{}
+
+  # ---------
+  # Interface functions
+  # ---------
 
   def new(entries) do
     Enum.reduce(
@@ -33,7 +39,6 @@ defmodule Todo.List do
   end
 
   def update_entry(todo_list, entry_id, updater_fun) do
-    # TODO : when updating an entry, why is the entire entry overwritten and the two don't merge?
     case Map.fetch(todo_list.entries, entry_id) do
       :error -> todo_list
       {:ok, old_entry} ->
@@ -51,23 +56,5 @@ defmodule Todo.List do
   def delete_entry(todo_list, id) do
     new_entries = Map.delete(todo_list.entries, id)
     %Todo.List{todo_list | entries: new_entries}
-  end
-end
-
-defimpl Collectable, for: Todo.List do
-  def into(original) do
-    {original, &into_callback/2}
-  end
-
-  defp into_callback(todo_list, {:cont, entry}) do
-    Todo.List.add_entry(todo_list, entry)
-  end
-
-  defp into_callback(todo_list, :done) do
-    todo_list
-  end
-
-  defp into_callback(_todo_list, :halt) do
-    :ok
   end
 end

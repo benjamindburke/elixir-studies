@@ -1,4 +1,8 @@
 defmodule Todo.System do
+  # ---------
+  # Supervisor/DynamicSupervisor hook functions
+  # ---------
+
   def start_link do
     Supervisor.start_link(
       [

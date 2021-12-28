@@ -4,6 +4,10 @@ defmodule Todo.Database do
   @db_folder "./persist"
   @pool_size 3
 
+  # ---------
+  # Interface functions
+  # ---------
+
   def store(key, data) do
     key
     |> choose_worker()
@@ -16,9 +20,9 @@ defmodule Todo.Database do
     |> Todo.DatabaseWorker.get(key)
   end
 
-  defp choose_worker(key) do
-    :erlang.phash2(key, @pool_size) + 1
-  end
+  # ---------
+  # DynamicSupervisor hook functions
+  # ---------
 
   def start_link do
     File.mkdir_p!(@db_folder)
@@ -38,5 +42,13 @@ defmodule Todo.Database do
       start: {__MODULE__, :start_link, []},
       type: :supervisor
     }
+  end
+
+  # ---------
+  # Helper functions
+  # ---------
+
+  defp choose_worker(key) do
+    :erlang.phash2(key, @pool_size) + 1
   end
 end
