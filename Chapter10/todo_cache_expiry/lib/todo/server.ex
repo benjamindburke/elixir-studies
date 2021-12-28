@@ -3,6 +3,8 @@
 defmodule Todo.Server do
   use GenServer, restart: :temporary
 
+  @expiry_idle_timeout :timer.seconds(10)
+
   # ---------
   # Interface functions
   # ---------
@@ -54,17 +56,24 @@ defmodule Todo.Server do
   # ---------
 
   @impl GenServer
-  @spec init({charlist, list}) :: {:ok, {charlist, Todo.List}}
   def init({name, entries}) do
-    {:ok, {name, Todo.Database.get(name) || Todo.List.new(entries)}}
-    # send(self(), :real_init) # uncomment to hook into handle_info(:real_init, ...) callback
+    {
+      :ok,
+      {name, Todo.Database.get(name) || Todo.List.new(entries)},
+      @expiry_idle_timeout
+    }
   end
 
   # READ
   # ---------
   @impl GenServer
   def handle_call({:entries, query}, _, {name, todo_list}) do
-    {:reply, Todo.List.entries(todo_list, query), {name, todo_list}}
+    {
+      :reply,
+      Todo.List.entries(todo_list, query),
+      {name, todo_list},
+      @expiry_idle_timeout
+    }
   end
 
   # CREATE
@@ -73,7 +82,11 @@ defmodule Todo.Server do
   def handle_cast({:add_entry, new_entry}, {name, todo_list}) do
     new_list = Todo.List.add_entry(todo_list, new_entry)
     Todo.Database.store(name, new_list)
-    {:noreply, {name, new_list}}
+    {
+      :noreply,
+      {name, new_list},
+      @expiry_idle_timeout
+    }
   end
 
   # UPDATE
@@ -82,7 +95,11 @@ defmodule Todo.Server do
   def handle_cast({:update_entry, new_entry}, {name, todo_list}) do
     new_list = Todo.List.update_entry(todo_list, new_entry)
     Todo.Database.store(name, new_list)
-    {:noreply, {name, new_list}}
+    {
+      :noreply,
+      {name, new_list},
+      @expiry_idle_timeout
+    }
   end
 
   # DELETE
@@ -91,6 +108,18 @@ defmodule Todo.Server do
   def handle_cast({:delete_entry, id}, {name, todo_list}) do
     new_list = Todo.List.delete_entry(todo_list, id)
     Todo.Database.store(name, new_list)
-    {:noreply, {name, new_list}}
+    {
+      :noreply,
+      {name, new_list},
+      @expiry_idle_timeout
+    }
+  end
+
+  # TIMEOUT
+  # ---------
+  @impl GenServer
+  def handle_info(:timeout, {name, todo_list}) do
+    IO.puts("Stopping to-do server for #{name}")
+    {:stop, :normal, {name, todo_list}}
   end
 end
