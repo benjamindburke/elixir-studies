@@ -14,9 +14,9 @@ defmodule Todo.Server do
     Agent.cast(
       pid,
       fn {name, todo_list} ->
-      new_list = Todo.List.add_entry(todo_list, new_entry)
-      Todo.Database.store(name, new_list)
-      {name, new_list}
+        new_list = Todo.List.add_entry(todo_list, new_entry)
+        Todo.Database.store(name, new_list)
+        {name, new_list}
       end
     )
   end
