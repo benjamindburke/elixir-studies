@@ -1,8 +1,6 @@
 # Todo Database [supervisor]
 # This module supervises the creation of database workers
 defmodule Todo.Database do
-  @db_folder "./persist"
-  @pool_size 3
 
   # ---------
   # Interface functions
@@ -23,15 +21,18 @@ defmodule Todo.Database do
   end
 
   def child_spec(_) do
-    File.mkdir_p!(@db_folder)
+    db_settings = Application.fetch_env!(:todo, :database)
+    db_folder = Keyword.fetch!(db_settings, :folder)
+
+    File.mkdir_p!(db_folder)
     :poolboy.child_spec(
       __MODULE__,
       [
         name: {:local, __MODULE__},
         worker_module: Todo.DatabaseWorker,
-        size: @pool_size
+        size: Keyword.fetch!(db_settings, :pool_size)
       ],
-      [@db_folder] # worker arguments
+      [db_folder] # worker arguments
     )
   end
 end
