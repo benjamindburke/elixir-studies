@@ -23,7 +23,7 @@ defmodule TodoCache.MixProject do
   defp deps do
     [
       {:poolboy, "~> 1.5"},
-      {:cowboy, "~> 2.9"},
+      {:plug_cowboy, "~> 2.5"},
       {:plug, "~> 1.12"}
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
