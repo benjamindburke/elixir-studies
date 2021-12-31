@@ -9,7 +9,6 @@ defmodule Todo.Server do
 
   # CREATE
   # ---------
-  @spec add_entry(pid, map) :: :ok
   def add_entry(pid, new_entry) do
     Agent.cast(
       pid,
@@ -23,7 +22,6 @@ defmodule Todo.Server do
 
   # READ
   # ---------
-  @spec entries(pid, any) :: list
   def entries(pid, query) do
     Agent.get(
       pid,
@@ -33,7 +31,6 @@ defmodule Todo.Server do
 
   # UPDATE
   # ---------
-  @spec update_entry(pid, map) :: :ok
   def update_entry(pid, %{} = new_entry) do
     Agent.cast(
       pid,
@@ -47,7 +44,6 @@ defmodule Todo.Server do
 
   # DELETE
   # ---------
-  @spec delete_entry(pid, integer) :: :ok
   def delete_entry(pid, id) do
     Agent.cast(
       pid,

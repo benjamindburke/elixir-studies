@@ -1,7 +1,6 @@
 # Todo List [protocol]
 # Implementation of the Collectable protocol for the Todo.List data structure
 defimpl Collectable, for: Todo.List do
-  @spec into(map) :: {Todo.List, (Todo.List, :done | :halt | {:cont, Todo.List} -> Todo.List)}
   def into(original) do
     {original, &into_callback/2}
   end

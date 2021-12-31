@@ -5,7 +5,6 @@ defmodule Todo.System do
   # Supervisor/DynamicSupervisor hook functions
   # ---------
 
-  @spec start_link :: {:error, any} | {:ok, pid}
   def start_link do
     Supervisor.start_link(
       [
