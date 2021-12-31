@@ -1,5 +1,5 @@
 defmodule TodoCacheTest do
-  use EsUnit.Case
+  use ExUnit.Case
 
   test "server_process" do
     bob_pid = Todo.Cache.server_process("bob") # cache is started automatically thanks to Application callback
