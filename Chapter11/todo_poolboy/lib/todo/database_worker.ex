@@ -7,29 +7,20 @@ defmodule Todo.DatabaseWorker do
   # Interface functions
   # ---------
 
-  def store(worker_id, key, data) do
-    GenServer.cast(via_tuple(worker_id), {:store, key, data})
+  def store(pid, key, data) do
+    GenServer.cast(pid, {:store, key, data})
   end
 
-  def get(worker_id, key) do
-    GenServer.call(via_tuple(worker_id), {:get, key})
+  def get(pid, key) do
+    GenServer.call(pid, {:get, key})
   end
 
   # ---------
   # Supervisor hook functions
   # ---------
 
-  def start_link({folder, worker_id}) do
-    IO.puts("Starting database worker #{worker_id}")
-    GenServer.start_link(
-      __MODULE__,
-      folder,
-      name: via_tuple(worker_id)
-    )
-  end
-
-  defp via_tuple(worker_id) do
-    Todo.ProcessRegistry.via_tuple({__MODULE__, worker_id})
+  def start_link(folder) do
+    GenServer.start_link(__MODULE__, folder)
   end
 
   # ---------
@@ -37,7 +28,6 @@ defmodule Todo.DatabaseWorker do
   # ---------
 
   @impl GenServer
-  @spec init(binary) :: {:ok, binary}
   def init(folder) do
     File.mkdir_p!(folder)
     {:ok, folder}
@@ -72,7 +62,6 @@ defmodule Todo.DatabaseWorker do
   # Helper functions
   # ---------
 
-  @spec file_name(binary, charlist) :: binary
   defp file_name(folder, key) do
     Path.join(folder, to_string(key))
   end
