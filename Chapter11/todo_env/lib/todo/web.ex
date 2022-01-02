@@ -52,9 +52,23 @@ defmodule Todo.Web do
   get "/entries" do
     conn = Plug.Conn.fetch_query_params(conn)
     list_name = Map.fetch!(conn.params, "list")
-    query_string = conn.query_string
+    search_by = Map.fetch!(conn.params, "searchBy")
+    query = Map.fetch!(conn.params, "query")
+    formatted_query =
+      case search_by do
+        "id" ->
+          {parsedInt, ""} = Integer.parse(query)
+          parsedInt
+        "title" -> query
+        "date" -> Date.from_iso8601!(query)
+      end
 
-    cached_entries = Todo.WebCache.get({list_name, query_string})
+    # create a consistent query string format for consistent caching
+    # using the raw conn.query_string might result in duplicate cache entries
+    # i.e. "?query=123&searchBy=id" != "?searchBy=id&query=123"
+    query_string = "?list=#{list_name}&searchBy=#{search_by}&query=#{query}"
+    cached_entries = Todo.WebCache.get(query_string)
+
     if cached_entries != nil do
       # serve response from cache if cache contains an entry for this query
       conn
@@ -62,16 +76,6 @@ defmodule Todo.Web do
       |> Plug.Conn.send_resp(200, cached_entries)
     else
       # when cache does not contain an entry for this query, serve it via server processes
-      search_by = Map.fetch!(conn.params, "searchBy")
-      query = Map.fetch!(conn.params, "query")
-      formatted_query =
-        case search_by do
-          "id" ->
-            {parsedInt, ""} = Integer.parse(query)
-            parsedInt
-          "title" -> query
-          "date" -> Date.from_iso8601!(query)
-        end
       entries_json =
         list_name
         |> Todo.Cache.server_process()
@@ -81,7 +85,7 @@ defmodule Todo.Web do
       entries_json = "[\n#{entries_json}\n]"
 
       # store the response for future duplicate queries
-      Todo.WebCache.store(list_name, {query_string, entries_json})
+      Todo.WebCache.store(query_string, entries_json)
 
       conn
       |> Plug.Conn.put_resp_content_type("application/json")
