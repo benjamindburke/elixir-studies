@@ -22,6 +22,7 @@ defmodule Todo.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:distillery, "~> 2.1"},
       {:poolboy, "~> 1.5"},
       {:plug_cowboy, "~> 2.5"},
       {:plug, "~> 1.12"}
