@@ -20,6 +20,10 @@ defmodule Todo.Database do
     )
   end
 
+  # ---------
+  # Supervisor hook functions
+  # ---------
+
   def child_spec(_) do
     db_settings = Application.fetch_env!(:todo, :database)
     db_folder = Keyword.fetch!(db_settings, :folder)

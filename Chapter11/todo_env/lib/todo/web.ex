@@ -94,6 +94,10 @@ defmodule Todo.Web do
 
   end
 
+  # ---------
+  # Supervisor hook functions
+  # ---------
+
   def child_spec(_) do
     Plug.Adapters.Cowboy.child_spec(
       scheme: :http,
