@@ -38,7 +38,7 @@ defmodule Todo.List do
   end
 
   def entries(todo_list, id) when is_integer(id) do
-    Map.get(todo_list.entries, id)
+    [Map.get(todo_list.entries, id)]
   end
 
   # UPDATE

@@ -52,26 +52,42 @@ defmodule Todo.Web do
   get "/entries" do
     conn = Plug.Conn.fetch_query_params(conn)
     list_name = Map.fetch!(conn.params, "list")
-    query = Map.fetch!(conn.params, "query")
-    formatted_query =
-      case Map.fetch!(conn.params, "searchBy") do
-        "id" ->
-          {parsedInt, ""} = Integer.parse(query)
-          parsedInt
-        "title" -> query
-        "date" -> Date.from_iso8601!(query)
-      end
+    query_string = conn.query_string
 
-    formatted_entries =
-      list_name
-      |> Todo.Cache.server_process()
-      |> Todo.Server.entries(formatted_query)
-      |> Enum.map(&"{\"date\": \"#{&1.date}\", \"title\": \"#{&1.title}\"}")
-      |> Enum.join(",\n")
+    cached_entries = Todo.WebCache.get({list_name, query_string})
+    if cached_entries != nil do
+      # serve response from cache if cache contains an entry for this query
+      conn
+      |> Plug.Conn.put_resp_content_type("application/json")
+      |> Plug.Conn.send_resp(200, cached_entries)
+    else
+      # when cache does not contain an entry for this query, serve it via server processes
+      search_by = Map.fetch!(conn.params, "searchBy")
+      query = Map.fetch!(conn.params, "query")
+      formatted_query =
+        case search_by do
+          "id" ->
+            {parsedInt, ""} = Integer.parse(query)
+            parsedInt
+          "title" -> query
+          "date" -> Date.from_iso8601!(query)
+        end
+      entries_json =
+        list_name
+        |> Todo.Cache.server_process()
+        |> Todo.Server.entries(formatted_query)
+        |> Enum.map(&"{\"date\": \"#{&1.date}\", \"title\": \"#{&1.title}\"}")
+        |> Enum.join(",\n")
+      entries_json = "[\n#{entries_json}\n]"
 
-    conn
-    |> Plug.Conn.put_resp_content_type("application/json")
-    |> Plug.Conn.send_resp(200, "[\n#{formatted_entries}\n]")
+      # store the response for future duplicate queries
+      Todo.WebCache.store(list_name, {query_string, entries_json})
+
+      conn
+      |> Plug.Conn.put_resp_content_type("application/json")
+      |> Plug.Conn.send_resp(200, entries_json)
+    end
+
   end
 
   def child_spec(_) do
