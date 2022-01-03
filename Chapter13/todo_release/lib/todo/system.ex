@@ -6,6 +6,7 @@ defmodule Todo.System do
   # ---------
 
   def start_link do
+    IO.puts("Starting node #{node()}")
     Supervisor.start_link(
       [
         Todo.Metrics,
